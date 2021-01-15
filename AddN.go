@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -13,15 +15,47 @@ const GOTOKEN string = "GOTOKEN"
 const HOME string = "HOME"
 const NOTES_FILE_NAME = NOTES_DIR + "/notes"
 
+func init() {
+	open, _ := os.OpenFile("/tmp/ngampel/addnlog", os.O_CREATE|os.O_APPEND|os.O_RDWR, 0777)
+	log.SetOutput(open)
+}
+
 func main() {
-	homeDir := os.Getenv(HOME)
-	err := cloneIfNeeded()
-	if err != nil {
-		println(err.Error())
-		os.Exit(1)
+
+	log.Print("inside notes")
+	subCmd := os.Args[1]
+	if subCmd == "add" {
+		log.Print("adding new note")
+		homeDir := os.Getenv(HOME)
+		err := cloneIfNeeded()
+		if err != nil {
+			println(err.Error())
+			log.Print("got error while adding a note: " + err.Error())
+			os.Exit(1)
+		}
+		appendToFile(strings.Join(os.Args[2:], " ") + "\n")
+		pushToGit(homeDir)
+	} else {
+
+		strToSearch := strings.ToLower(strings.Join(os.Args[2:], " "))
+		homeDir := os.Getenv(HOME)
+		f, err := os.Open(homeDir + "/" + NOTES_FILE_NAME)
+		if err != nil {
+			println(err.Error())
+			os.Exit(1)
+		}
+		scanner := bufio.NewScanner(f)
+
+		for scanner.Scan() {
+			line := scanner.Text()
+			lineLow := strings.ToLower(line)
+			if strings.Contains(lineLow, strToSearch) {
+				println(line)
+			}
+		}
 	}
-	appendToFile(strings.Join(os.Args[1:], " ") + "\n")
-	pushToGit(homeDir)
+	log.Print("outside")
+
 }
 
 func pushToGit(homeDir string) {
