@@ -42,6 +42,7 @@ func main() {
 		f, err := os.Open(homeDir + "/" + NOTES_FILE_NAME)
 		if err != nil {
 			println(err.Error())
+			log.Print("got error while looking for note: " + err.Error())
 			os.Exit(1)
 		}
 		scanner := bufio.NewScanner(f)
